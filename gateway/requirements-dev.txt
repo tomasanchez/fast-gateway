@@ -1,3 +1,8 @@
 -r requirements.txt
 
-pytest
+pytest ~=7.2.1
+pytest-cov ~= 4.0.0
+pytest-asyncio ~= 0.20.3
+requests ~= 2.28.2
+httpx ~= 0.23.3
+aioresponses ~= 0.7.3
