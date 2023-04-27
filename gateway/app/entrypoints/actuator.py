@@ -49,4 +49,4 @@ async def root_redirect():
     """
     Redirects to health check endpoint.
     """
-    return RedirectResponse(url="/docs")
+    return RedirectResponse(url="/docs", status_code=HTTP_301_MOVED_PERMANENTLY)
