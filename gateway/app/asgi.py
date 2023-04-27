@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
+from app.adapters.aiohttp_client import aio_http_client
 from app.router import root_router, root_v1_router
 from app.settings.app_settings import ApplicationSettings
 
@@ -19,6 +20,8 @@ async def on_startup():
     """
     log.debug("Execute FastAPI startup event handler.")
 
+    aio_http_client.get_aiohttp_client()
+
 
 async def on_shutdown():
     """
@@ -28,6 +31,8 @@ async def on_shutdown():
         1. https://fastapi.tiangolo.com/advanced/events/#shutdown-event
     """
     log.debug("Execute FastAPI shutdown event handler.")
+
+    await aio_http_client.close_aiohttp_client()
 
 
 @asynccontextmanager
@@ -55,7 +60,7 @@ def get_application() -> FastAPI:
     Returns:
        FastAPI: Application object instance.
     """
-    
+
     log.debug("Initialize FastAPI application node.")
 
     settings = ApplicationSettings()
