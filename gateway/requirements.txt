@@ -21,3 +21,5 @@ pydantic[email]~=1.10.7
 # async http requests & fast dns resolving
 aiohttp~=3.8.4
 aiodns==2.0.0
+aioredis~=2.0.1
+redis~=4.5.4

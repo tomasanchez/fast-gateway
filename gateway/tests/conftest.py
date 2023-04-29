@@ -8,6 +8,7 @@ import pytest_asyncio
 from starlette.testclient import TestClient
 
 from app.adapters.aiohttp_client import AsyncHttpClient, AiohttpClient
+from app.adapters.redis_connector import RedisClient
 from app.main import app
 
 
@@ -49,6 +50,8 @@ def fixture_test_client() -> TestClient:
     Returns:
         TestClient: A test client for the app.
     """
+    app.user_middleware.clear()
+    app.middleware_stack = app.build_middleware_stack()
     return TestClient(app)
 
 
@@ -64,3 +67,13 @@ async def fixture_aio_http_client() -> AsyncHttpClient:
     client.get_aiohttp_client()
     yield client
     await client.close_aiohttp_client()
+
+
+@pytest_asyncio.fixture(name="redis_client_connector")
+async def fixture_redis_client() -> RedisClient:
+    """
+    Create a Redis client.
+    """
+    client = RedisClient(url="fake-host", port=6379)
+    yield client
+    await client.close()
