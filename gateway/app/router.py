@@ -9,7 +9,7 @@ from fastapi import APIRouter
 
 from app.entrypoints import actuator
 from app.entrypoints.v1 import auth
-from entrypoints.v1 import booking
+from app.entrypoints.v1 import booking
 
 root_router = APIRouter()
 root_v1_router = APIRouter(prefix="/api/v1", tags=["v1"])
