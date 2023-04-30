@@ -16,25 +16,30 @@ from starlette.status import HTTP_200_OK, HTTP_301_MOVED_PERMANENTLY, HTTP_503_S
 from app.adapters.network import make_request
 from app.dependencies import AsyncHttpClientDependency, RedisDependency
 from app.domain.schemas import ResponseModel, ReadinessChecked, ServiceReadiness, ServiceReadinessStatus
+from app.settings.app_settings import ApplicationSettings
 from app.settings.gateway_settings import GatewaySettings
-from settings.app_settings import ApplicationSettings
 
 router = APIRouter(tags=["Actuator"])
 
 
-async def check_services(client: AsyncHttpClientDependency):
+async def check_services(client: AsyncHttpClientDependency,
+                         services: dict[str, str] | None = None) -> list[ServiceReadiness]:
     """
     Checks if upstream services are ready.
     """
+    microservices: list[ServiceReadiness] = list()
 
-    settings = GatewaySettings()
-    try:
-        _, code = await make_request(url=settings.AUTH_SERVICE_URL + "/readiness", method="GET", client=client)
-        auth_service_status = ServiceReadinessStatus.OK if code == HTTP_200_OK else ServiceReadinessStatus.ERROR
-    except (asyncio.TimeoutError, aiohttp.ClientError):
-        auth_service_status = ServiceReadinessStatus.OFFLINE
+    for service, url in services.items():
 
-    return auth_service_status
+        try:
+            _, code = await make_request(url=url + "/readiness", method="GET", client=client)
+            status = ServiceReadinessStatus.OK if code == HTTP_200_OK else ServiceReadinessStatus.ERROR
+        except (asyncio.TimeoutError, aiohttp.ClientError):
+            status = ServiceReadinessStatus.OFFLINE
+
+        microservices.append(ServiceReadiness(name=service, status=status))
+
+    return microservices
 
 
 @router.get("/readiness",
@@ -47,6 +52,7 @@ async def ready(http_client: AsyncHttpClientDependency, redis: RedisDependency) 
     It checks if the required services are ready.
     """
     app_settings = ApplicationSettings()
+    gateway = GatewaySettings()
 
     services = []
 
@@ -55,9 +61,14 @@ async def ready(http_client: AsyncHttpClientDependency, redis: RedisDependency) 
                                          status=ServiceReadinessStatus.OK
                                          if await redis.ping() else ServiceReadinessStatus.ERROR))
 
-    auth_service = ServiceReadiness(name="auth service", status=await check_services(http_client))
+    using_services: dict[str, str] = {
+        "auth-service": gateway.AUTH_SERVICE_URL,
+        "booking-service": gateway.BOOKING_SERVICE_URL,
+    }
 
-    services.append(auth_service)
+    microservices = await check_services(client=http_client, services=using_services)
+
+    services.extend(microservices)
 
     readiness = ReadinessChecked(
         status=ServiceReadinessStatus.OK,
