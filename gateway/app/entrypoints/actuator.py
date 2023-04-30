@@ -7,6 +7,7 @@ Monitoring our app, gathering metrics, understanding traffic, or the state of ou
 dependency.
 """
 import asyncio
+import logging
 
 import aiohttp
 from fastapi import APIRouter, HTTPException
@@ -20,6 +21,7 @@ from app.settings.app_settings import ApplicationSettings
 from app.settings.gateway_settings import GatewaySettings
 
 router = APIRouter(tags=["Actuator"])
+log = logging.getLogger("uvicorn")
 
 
 async def check_services(client: AsyncHttpClientDependency,
@@ -30,11 +32,13 @@ async def check_services(client: AsyncHttpClientDependency,
     microservices: list[ServiceReadiness] = list()
 
     for service, url in services.items():
+        log.info(f"Checking service {service}(url={url})")
 
         try:
             _, code = await make_request(url=url + "/readiness", method="GET", client=client)
             status = ServiceReadinessStatus.OK if code == HTTP_200_OK else ServiceReadinessStatus.ERROR
-        except (asyncio.TimeoutError, aiohttp.ClientError):
+        except (asyncio.TimeoutError, aiohttp.ClientError) as e:
+            log.error(f"Error while checking service {service}(url={url}): {str(e)}")
             status = ServiceReadinessStatus.OFFLINE
 
         microservices.append(ServiceReadiness(name=service, status=status))

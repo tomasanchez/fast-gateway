@@ -3,6 +3,7 @@ This module is responsible for making requests to in-network services.
 """
 import asyncio
 import json
+import logging
 from importlib import import_module
 from typing import Any, Callable, TypeVar
 from urllib.parse import urlencode
@@ -14,6 +15,8 @@ from fastapi import HTTPException, status
 from app.adapters.aiohttp_client import AsyncHttpClient, aio_http_client
 from app.domain.schemas import CamelCaseModel
 from app.settings.gateway_settings import GatewaySettings
+
+log = logging.getLogger("uvicorn")
 
 
 def import_function(method_path) -> Callable[[Any], Any]:
@@ -157,18 +160,21 @@ async def gateway(
         )
 
     except asyncio.TimeoutError:
+        log.error(f'Time our for: {url}, {method}')
         raise HTTPException(
             status_code=status.HTTP_504_GATEWAY_TIMEOUT,
             detail='Service is timed out.',
         )
 
-    except aiohttp.ClientConnectorError:
+    except aiohttp.ClientConnectorError as e:
+        log.error(f'Connection error for: {url}, {method}. {str(e)}')
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail='Service is unavailable.',
         )
 
-    except aiohttp.ContentTypeError:
+    except aiohttp.ContentTypeError as e:
+        log.error(f'Content type error for: {url}, {method}. {str(e)}')
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail='Service error.',
