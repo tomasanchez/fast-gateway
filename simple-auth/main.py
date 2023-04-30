@@ -151,15 +151,18 @@ async def get_users() -> ResponseModels[UserRegistered]:
     return ResponseModels(data=list(db.values()))
 
 
-@app.get("/api/v1/users/{user_id}",
+@app.get("/api/v1/users/{username}",
          status_code=HTTP_200_OK,
-         summary="Gets a user by id.",
+         summary="Gets a user by their username.",
          tags=["Users", "Queries", "v1"])
-async def get_user(user_id: UUID) -> ResponseModel[UserRegistered]:
+async def get_user(username: str) -> ResponseModel[UserRegistered]:
     """
-    Gets a user by id.
+    Gets a user by username.
     """
-    user = db.get(user_id, None)
+    users = [u for u in db.values() if u.username == username]
+
+    user = users[0] if users else None
+
     if user is None:
         raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="User not found")
     return ResponseModel(data=user)
