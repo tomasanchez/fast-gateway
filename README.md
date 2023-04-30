@@ -1,5 +1,20 @@
 # Fast Gateway
 
+## Table of Contents
+
+<!-- TOC -->
+* [Fast Gateway](#fast-gateway)
+  * [Table of Contents](#table-of-contents)
+  * [Features](#features)
+  * [Context](#context)
+  * [Architecture](#architecture)
+  * [Running it locally](#running-it-locally)
+  * [Design](#design)
+    * [API Gateway](#api-gateway)
+    * [Rate Limiter](#rate-limiter)
+  * [Recommended Readings](#recommended-readings)
+<!-- TOC -->
+
 
 A FastAPI API Gateway proof of concept.
 
@@ -34,6 +49,15 @@ Consists of 2 services, an API Gateway and a Redis cluster.
 They are all dockerized and can be run with docker-compose.
 
 ![Architecture](./docs/architecture.svg)
+
+
+## Running it locally
+
+Run docker-compose:
+
+```bash
+docker-compose up
+```
 
 
 ## Design
