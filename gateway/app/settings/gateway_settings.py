@@ -13,7 +13,7 @@ class GatewaySettings(BaseSettings):
 
     Environment variables:
         * API_GATEWAY_AUTH_SERVICE_URL
-        * API_GATEWAY_ALLOCATION_SERVICE_URL
+        * API_GATEWAY_BOOKING_SERVICE_URL
         * API_GATEWAY_TIMEOUT
 
     Attributes:
