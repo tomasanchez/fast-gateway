@@ -17,6 +17,8 @@ class ApplicationSettings(BaseSettings):
     Environment variables:
         * FASTAPI_DEBUG
         * FASTAPI_PROJECT_NAME
+        * FASTAPI_PROJECT_DESCRIPTION
+        * FASTAPI_USE_LIMITER
         * FASTAPI_VERSION
         * FASTAPI_DOCS_URL
 
@@ -24,6 +26,10 @@ class ApplicationSettings(BaseSettings):
         DEBUG (bool): FastAPI logging level. You should disable this for
             production.
         PROJECT_NAME (str): FastAPI project name.
+        PROJECT_DESCRIPTION (str): FastAPI project description.
+        USE_LIMITER (bool): Enable rate limiter middleware.
+        MAX_REQUESTS (int): Maximum number of requests per time limit.
+        REQUEST_TIME_LIMIT (int): Time limit in seconds.
         VERSION (str): Application version.
         DOCS_URL (str): Path where swagger ui will be served at.
     """
@@ -31,6 +37,9 @@ class ApplicationSettings(BaseSettings):
     DEBUG: bool = True
     PROJECT_NAME: str = "API Gateway Service"
     PROJECT_DESCRIPTION: str = "This service is routing request to corresponding microservices."
+    USE_LIMITER: bool = False
+    MAX_REQUESTS: int = 10
+    REQUEST_TIME_LIMIT: int = 60
     VERSION: str = __version__
     DOCS_URL: str = "/docs"
 

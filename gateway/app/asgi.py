@@ -2,9 +2,10 @@
 import logging
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 
 from app.adapters.aiohttp_client import aio_http_client
+from app.middleware import rate_limiter_middleware
 from app.router import root_router, root_v1_router
 from app.settings.app_settings import ApplicationSettings
 
@@ -72,6 +73,7 @@ def get_application() -> FastAPI:
         version=settings.VERSION,
         docs_url=settings.DOCS_URL,
         lifespan=lifespan,
+        dependencies=[Depends(rate_limiter_middleware)],
     )
 
     log.debug("Add application routes.")
