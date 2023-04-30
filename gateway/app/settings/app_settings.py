@@ -36,7 +36,7 @@ class ApplicationSettings(BaseSettings):
 
     DEBUG: bool = True
     PROJECT_NAME: str = "API Gateway Service"
-    PROJECT_DESCRIPTION: str = "This service is routing request to corresponding microservices."
+    PROJECT_DESCRIPTION: str = "Fast Gateway helps manage your microservices communication. 🚀"
     USE_LIMITER: bool = False
     MAX_REQUESTS: int = 10
     REQUEST_TIME_LIMIT: int = 60

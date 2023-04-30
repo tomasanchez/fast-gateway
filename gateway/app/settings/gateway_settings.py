@@ -18,12 +18,12 @@ class GatewaySettings(BaseSettings):
 
     Attributes:
         AUTH_SERVICE_URL (str): Auth service url.
-        ALLOCATION_SERVICE_URL (str): Allocation service url.
+        BOOKING_SERVICE_URL (str): Allocation service url.
         TIMEOUT (int): Timeout for requests.
     """
 
     AUTH_SERVICE_URL: str = "http://localhost:8000"
-    ALLOCATION_SERVICE_URL: str = "http://localhost:8001"
+    BOOKING_SERVICE_URL: str = "http://localhost:8001"
     TIMEOUT: int = 59
 
     class Config:

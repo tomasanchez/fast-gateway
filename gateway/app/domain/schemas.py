@@ -1,6 +1,8 @@
 """
 This module contains the schemas used for request/response validation in the allocation service.
 """
+import datetime
+import uuid
 from enum import Enum
 from re import sub
 from typing import Generic, TypeVar
@@ -100,3 +102,29 @@ class User(CamelCaseModel):
     email: EmailStr | None = Field(description="The email.", example="jd@e.mail")
     name: str | None = Field(description="The name.", example="John")
     last_name: str | None = Field(description="The last name.", example="Doe")
+
+
+class Passenger(CamelCaseModel):
+    """
+    A passenger.
+    """
+    full_name: str = Field(description="The passenger name.", example="John Doe")
+    birth_date: datetime.date = Field(description="The passenger birth date.", example="1990-01-01")
+    passport_number: str = Field(description="The passenger passport number.", example="123456789")
+
+
+class FlightReserved(CamelCaseModel):
+    """
+    A flight reservation.
+    """
+
+    id: UUID = Field(description="The flight reservation id.", default_factory=uuid.uuid4)
+    user: str = Field(description="Username of the user who made the reservation.", example="johndoe")
+    flight_number: str = Field(description="The flight number.", example="TP1234")
+    origin: str = Field(description="The flight origin.", example="LIS")
+    destination: str = Field(description="The flight destination.", example="OPO")
+    departure_time: datetime.datetime = Field(description="The flight departure date.", example="2021-01-01T12:00:00",
+                                              default_factory=datetime.datetime.now)
+    arrival_time: datetime.datetime = Field(description="The flight arrival date.", example="2021-01-01T15:00:00",
+                                            default_factory=datetime.datetime.now)
+    passengers: list[Passenger] = Field(description="The passengers list.")
