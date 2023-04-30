@@ -50,8 +50,6 @@ def fixture_test_client() -> TestClient:
     Returns:
         TestClient: A test client for the app.
     """
-    app.user_middleware.clear()
-    app.middleware_stack = app.build_middleware_stack()
     return TestClient(app)
 
 

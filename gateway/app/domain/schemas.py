@@ -53,9 +53,9 @@ class ResponseModels(GenericModel, Generic[T], CamelCaseModel):
     data: list[T] = Field(description="The response data list.")
 
 
-class ServiceHealthStatus(str, Enum):
+class ServiceReadinessStatus(str, Enum):
     """
-    The service health check status.
+    The service readiness check status.
 
     Attributes:
         OK: The service is healthy.
@@ -67,26 +67,27 @@ class ServiceHealthStatus(str, Enum):
     OFFLINE = "offline"
 
 
-class ServiceHealth(CamelCaseModel):
+class ServiceReadiness(CamelCaseModel):
     """
-    A response wrapper for a service health check.
+    A response wrapper for a service readiness check.
     """
     name: str = Field(description="The service name.", example="auth service")
-    status: ServiceHealthStatus = Field(description="The health check status.", example="ok",
-                                        default=ServiceHealthStatus.OK)
+    status: ServiceReadinessStatus = Field(description="The health check status.", example="ok",
+                                           default=ServiceReadinessStatus.OK)
 
 
-class HealthChecked(CamelCaseModel):
+class ReadinessChecked(CamelCaseModel):
     """
-    A response wrapper for a health check.
+    A response wrapper for a readiness check.
     """
-    status: ServiceHealthStatus = Field(description="The health check status.",
-                                        example="ok",
-                                        default=ServiceHealthStatus.OFFLINE)
-    redis: str = Field(description="The redis health check status.", example="offline", default="offline")
-    services: list[ServiceHealth] = Field(description="The services health check status.",
-                                          example=[ServiceHealth(name="auth service", status=ServiceHealthStatus.OK)],
-                                          default=list())
+    status: ServiceReadinessStatus = Field(description="The health check status.",
+                                           example="ok",
+                                           default=ServiceReadinessStatus.OFFLINE)
+    services: list[ServiceReadiness] = Field(description="The services health check status.",
+                                             example=[
+                                                 ServiceReadiness(name="redis",
+                                                                  status=ServiceReadinessStatus.OK)],
+                                             default=list())
 
 
 class User(CamelCaseModel):

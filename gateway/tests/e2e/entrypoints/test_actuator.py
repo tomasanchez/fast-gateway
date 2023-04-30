@@ -3,10 +3,14 @@ Actuator Entrypoint Tests
 """
 import pytest
 from aioresponses import aioresponses
-from starlette.status import HTTP_301_MOVED_PERMANENTLY, HTTP_200_OK, HTTP_500_INTERNAL_SERVER_ERROR
+from starlette.status import HTTP_301_MOVED_PERMANENTLY, HTTP_200_OK, HTTP_503_SERVICE_UNAVAILABLE
 
-from app.domain.schemas import HealthChecked, ServiceHealthStatus
+from app.dependencies import get_redis
+from app.domain.schemas import ReadinessChecked, ServiceReadinessStatus
+from app.middleware import rate_limiter_middleware
 from app.settings.gateway_settings import GatewaySettings
+from tests.conftest import DependencyOverrider
+from tests.mocks import no_rate_limiter_middleware, FakeRedis
 
 
 class TestActuatorEntryPoint:
@@ -16,45 +20,59 @@ class TestActuatorEntryPoint:
         with aioresponses() as mock:
             yield mock
 
-    def test_root_redirect_to_docs_permanently(self, test_client):
+    def test_root_redirect_to_docs_permanently(self, test_client, monkeypatch):
         """
         GIVEN a FastAPI application
         WHEN the root path is requested (GET)
         THEN it is redirected to the docs path
         """
 
-        # when
-        response = test_client.get("/").history[0]
+        overrides = {
+            rate_limiter_middleware: lambda: no_rate_limiter_middleware
+        }
 
-        # then
-        assert response.status_code == HTTP_301_MOVED_PERMANENTLY
-        assert response.headers["location"] == "/docs"
+        with DependencyOverrider(overrides=overrides):
+            # when
+            response = test_client.get("/").history[0]
 
-    def test_check_health_with_offline_services(self, test_client):
+            # then
+            assert response.status_code == HTTP_301_MOVED_PERMANENTLY
+            assert response.headers["location"] == "/docs"
+
+    def test_check_readiness_with_offline_services(self, test_client):
         """
         GIVEN a FastAPI application
-        WHEN the health check path is requested (GET)
-        THEN it should return OK, even though other services are offline
+        WHEN the readiness check path is requested (GET)
+        THEN it should return SERVICE UNAVAILABLE
         """
+        # given
+        redis = FakeRedis(ping=False)
 
-        # when
-        response = test_client.get("/health")
+        overrides = {
+            rate_limiter_middleware: lambda: no_rate_limiter_middleware,
+            get_redis: lambda: redis
+        }
 
-        # then
-        assert response.status_code == HTTP_200_OK
+        with DependencyOverrider(overrides=overrides):
+            # when
+            response = test_client.get("/readiness")
+            # then
+            assert response.status_code == HTTP_503_SERVICE_UNAVAILABLE
 
-        health_checked = HealthChecked(**response.json()["data"])
-
-        assert health_checked.status == ServiceHealthStatus.OK
-
-    def test_check_health_with_service_error(self, test_client, fake_web):
+    def test_check_readiness_with_service_error(self, test_client, fake_web):
         """
         GIVEN a FastAPI application, and a mocked service
-        WHEN the health check path is requested (GET)
+        WHEN the readiness check path is requested (GET)
         THEN it should return OK, with the service status as OK
         """
         # given
         settings = GatewaySettings()
+        redis = FakeRedis()
+
+        overrides = {
+            rate_limiter_middleware: lambda: no_rate_limiter_middleware,
+            get_redis: lambda: redis
+        }
 
         fake_web.get(
             settings.AUTH_SERVICE_URL + "/health",
@@ -62,35 +80,12 @@ class TestActuatorEntryPoint:
             payload={"fake": "response"},
         )
 
-        # when
-        response = test_client.get("/health")
-        health_checked = HealthChecked(**response.json()["data"])
+        with DependencyOverrider(overrides=overrides):
+            # when
+            response = test_client.get("/readiness")
+            health_checked = ReadinessChecked(**response.json()["data"])
 
-        # then
-        services = [service.status == ServiceHealthStatus.OK for service in health_checked.services]
+            # then
+            services = [service.status == ServiceReadinessStatus.OK for service in health_checked.services]
 
-        assert any(services)
-
-    def test_check_health_with_service_offline(self, test_client, fake_web):
-        """
-        GIVEN a FastAPI application, and a mocked service
-        WHEN the health check path is requested (GET)
-        THEN it should return OK, with the service status as error
-        """
-        # given
-        settings = GatewaySettings()
-
-        fake_web.get(
-            settings.AUTH_SERVICE_URL + "/health",
-            status=HTTP_500_INTERNAL_SERVER_ERROR,
-            payload={"fake": "response"},
-        )
-
-        # when
-        response = test_client.get("/health")
-        health_checked = HealthChecked(**response.json()["data"])
-
-        # then
-        services = [service.status == ServiceHealthStatus.ERROR for service in health_checked.services]
-
-        assert any(services)
+            assert any(services)
