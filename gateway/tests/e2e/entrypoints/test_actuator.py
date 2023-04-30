@@ -7,7 +7,6 @@ from starlette.status import HTTP_301_MOVED_PERMANENTLY, HTTP_200_OK, HTTP_503_S
     HTTP_429_TOO_MANY_REQUESTS
 
 from app.dependencies import get_redis
-from app.domain.schemas import ReadinessChecked, ServiceReadinessStatus
 from app.middleware import rate_limiter_middleware
 from app.settings.gateway_settings import GatewaySettings
 from tests.conftest import DependencyOverrider
@@ -40,14 +39,27 @@ class TestActuatorEntryPoint:
             assert response.status_code == HTTP_301_MOVED_PERMANENTLY
             assert response.headers["location"] == "/docs"
 
-    def test_check_readiness_with_offline_services(self, test_client):
+    def test_check_readiness_with_offline_services(self, test_client, fake_web):
         """
         GIVEN a FastAPI application
         WHEN the readiness check path is requested (GET)
         THEN it should return SERVICE UNAVAILABLE
         """
         # given
+        settings = GatewaySettings()
         redis = FakeRedis(ping=False)
+
+        fake_web.get(
+            settings.AUTH_SERVICE_URL + "/readiness",
+            status=HTTP_503_SERVICE_UNAVAILABLE,
+            payload={"fake": "response"},
+        )
+
+        fake_web.get(
+            settings.BOOKING_SERVICE_URL + "/readiness",
+            status=HTTP_503_SERVICE_UNAVAILABLE,
+            payload={"fake": "response"},
+        )
 
         overrides = {
             rate_limiter_middleware: lambda: no_rate_limiter_middleware,
@@ -60,36 +72,71 @@ class TestActuatorEntryPoint:
             # then
             assert response.status_code == HTTP_503_SERVICE_UNAVAILABLE
 
-    def test_check_readiness_with_service_error(self, test_client, fake_web):
+    def test_app_not_ready_if_services_available_but_one_is_offline(self, test_client, fake_web):
         """
-        GIVEN a FastAPI application, and a mocked service
+        GIVEN a FastAPI application with SOME services available
         WHEN the readiness check path is requested (GET)
-        THEN it should return OK, with the service status as OK
+        THEN it should return SERVICE UNAVAILABLE
         """
         # given
         settings = GatewaySettings()
-        redis = FakeRedis()
+        redis = FakeRedis(ping=True)
+
+        fake_web.get(
+            settings.AUTH_SERVICE_URL + "/readiness",
+            status=HTTP_200_OK,
+            payload={"fake": "response"},
+        )
+
+        fake_web.get(
+            settings.BOOKING_SERVICE_URL + "/readiness",
+            status=HTTP_503_SERVICE_UNAVAILABLE,
+            payload={"fake": "response"},
+        )
 
         overrides = {
             rate_limiter_middleware: lambda: no_rate_limiter_middleware,
             get_redis: lambda: redis
         }
 
+        with DependencyOverrider(overrides=overrides):
+            # when
+            response = test_client.get("/readiness")
+            # then
+            assert response.status_code == HTTP_503_SERVICE_UNAVAILABLE
+
+    def test_app_is_ready_to_serve_requests(self, test_client, fake_web):
+        """
+        GIVEN a FastAPI application, and services available
+        WHEN the readiness check path is requested (GET)
+        THEN it should return OK
+        """
+        # given
+        settings = GatewaySettings()
+        redis = FakeRedis(ping=True)
+
         fake_web.get(
-            settings.AUTH_SERVICE_URL + "/health",
+            settings.AUTH_SERVICE_URL + "/readiness",
             status=HTTP_200_OK,
             payload={"fake": "response"},
         )
 
+        fake_web.get(
+            settings.BOOKING_SERVICE_URL + "/readiness",
+            status=HTTP_200_OK,
+            payload={"fake": "response"},
+        )
+
+        overrides = {
+            rate_limiter_middleware: lambda: no_rate_limiter_middleware,
+            get_redis: lambda: redis
+        }
+
         with DependencyOverrider(overrides=overrides):
             # when
             response = test_client.get("/readiness")
-            health_checked = ReadinessChecked(**response.json()["data"])
-
             # then
-            services = [service.status == ServiceReadinessStatus.OK for service in health_checked.services]
-
-            assert any(services)
+            assert response.status_code == HTTP_200_OK
 
     def test_rate_limiter(self, test_client, monkeypatch):
         """
