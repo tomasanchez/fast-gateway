@@ -210,9 +210,10 @@ class AiohttpClient(AsyncHttpClient):
         self.log.debug(f"Started POST: {url}")
         response = await client.post(
             url,
-            data=data,
+            json=data,
             headers=headers,
             raise_for_status=raise_for_status,
+            allow_redirects=False,
         )
 
         return response
@@ -229,9 +230,10 @@ class AiohttpClient(AsyncHttpClient):
         self.log.debug(f"Started PUT: {url}")
         response = await client.put(
             url,
-            data=data,
+            json=data,
             headers=headers,
             raise_for_status=raise_for_status,
+            allow_redirects=False,
         )
 
         return response
@@ -249,6 +251,7 @@ class AiohttpClient(AsyncHttpClient):
             url,
             headers=headers,
             raise_for_status=raise_for_status,
+            allow_redirects=False,
         )
 
         return response
@@ -265,9 +268,10 @@ class AiohttpClient(AsyncHttpClient):
         self.log.debug(f"Started PATCH: {url}")
         response = await client.patch(
             url,
-            data=data,
+            json=data,
             headers=headers,
             raise_for_status=raise_for_status,
+            allow_redirects=False,
         )
 
         return response
