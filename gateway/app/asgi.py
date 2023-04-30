@@ -8,6 +8,7 @@ from app.adapters.aiohttp_client import aio_http_client
 from app.middleware import rate_limiter_middleware
 from app.router import root_router, root_v1_router
 from app.settings.app_settings import ApplicationSettings
+from app.settings.gateway_settings import GatewaySettings
 
 log = logging.getLogger(__name__)
 
@@ -65,6 +66,37 @@ def get_application() -> FastAPI:
     log.debug("Initialize FastAPI application node.")
 
     settings = ApplicationSettings()
+    gateway = GatewaySettings()
+
+    contact = {
+        "name": "Tomas Sanchez",
+        "url": "https://tomasanchez.github.io/",
+        "email": "tosanchez@frba.utn.edu.ar"
+    }
+
+    license_info = {
+        "name": "Apache 2.0",
+        "url": "https://www.apache.org/licenses/LICENSE-2.0.html",
+    }
+
+    tags_metadata = [
+        {
+            "name": "Auth Service",
+            "description": "Manage registered user operations.",
+            "externalDocs": {
+                "description": "Auth Service docs",
+                "url": f"{gateway.AUTH_SERVICE_URL}/docs",
+            }
+        },
+        {
+            "name": "Booking Service",
+            "description": "Manage Flight reservations.",
+            "externalDocs": {
+                "description": "Booking Service docs",
+                "url": f"{gateway.BOOKING_SERVICE_URL}/docs",
+            },
+        },
+    ]
 
     app = FastAPI(
         title=settings.PROJECT_NAME,
@@ -74,6 +106,9 @@ def get_application() -> FastAPI:
         docs_url=settings.DOCS_URL,
         lifespan=lifespan,
         dependencies=[Depends(rate_limiter_middleware)],
+        contact=contact,
+        license_info=license_info,
+        openapi_tags=tags_metadata
     )
 
     log.debug("Add application routes.")
