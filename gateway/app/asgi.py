@@ -83,18 +83,10 @@ def get_application() -> FastAPI:
         {
             "name": "Auth Service",
             "description": "Manage registered user operations.",
-            "externalDocs": {
-                "description": "Auth Service docs",
-                "url": f"{gateway.AUTH_SERVICE_URL}/docs",
-            }
         },
         {
             "name": "Booking Service",
             "description": "Manage Flight reservations.",
-            "externalDocs": {
-                "description": "Booking Service docs",
-                "url": f"{gateway.BOOKING_SERVICE_URL}/docs",
-            },
         },
     ]
 
