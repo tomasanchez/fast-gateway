@@ -3,7 +3,8 @@ Actuator Entrypoint Tests
 """
 import pytest
 from aioresponses import aioresponses
-from starlette.status import HTTP_301_MOVED_PERMANENTLY, HTTP_200_OK, HTTP_503_SERVICE_UNAVAILABLE
+from starlette.status import HTTP_301_MOVED_PERMANENTLY, HTTP_200_OK, HTTP_503_SERVICE_UNAVAILABLE, \
+    HTTP_429_TOO_MANY_REQUESTS
 
 from app.dependencies import get_redis
 from app.domain.schemas import ReadinessChecked, ServiceReadinessStatus
@@ -89,3 +90,46 @@ class TestActuatorEntryPoint:
             services = [service.status == ServiceReadinessStatus.OK for service in health_checked.services]
 
             assert any(services)
+
+    def test_rate_limiter(self, test_client, monkeypatch):
+        """
+        GIVEN a FastAPI application
+        WHEN the rate limiter is enabled and the same IP makes too many requests
+        THEN it should return TOO MANY REQUESTS
+        """
+        # given
+        redis = FakeRedis()
+        max_requests = 1
+        monkeypatch.setenv("FASTAPI_MAX_REQUESTS", str(max_requests))
+        monkeypatch.setenv("FASTAPI_USE_LIMITER", "True")
+        overrides = {
+            get_redis: lambda: redis
+        }
+
+        with DependencyOverrider(overrides=overrides):
+            # when
+            for _ in range(max_requests):
+                test_client.get("/health")
+
+            # then
+            response = test_client.get("/health")
+            assert response.status_code == HTTP_429_TOO_MANY_REQUESTS
+
+    def test_health_endpoint(self, test_client):
+        """
+        GIVEN a FastAPI application
+        WHEN the health check path is requested (GET)
+        THEN it should return OK
+        """
+
+        # given
+        overrides = {
+            rate_limiter_middleware: lambda: no_rate_limiter_middleware
+        }
+
+        with DependencyOverrider(overrides=overrides):
+            # when
+            response = test_client.get("/health")
+
+            # then
+            assert response.status_code == HTTP_200_OK

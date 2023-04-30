@@ -43,6 +43,8 @@ async def check_services(client: AsyncHttpClientDependency):
 async def ready(http_client: AsyncHttpClientDependency, redis: RedisDependency) -> ResponseModel[ReadinessChecked]:
     """
     Queries to check if application is ready to serve requests.
+
+    It checks if the required services are ready.
     """
     app_settings = ApplicationSettings()
 
@@ -68,6 +70,16 @@ async def ready(http_client: AsyncHttpClientDependency, redis: RedisDependency) 
         raise HTTPException(status_code=HTTP_503_SERVICE_UNAVAILABLE, detail=readiness.dict())
 
     return ResponseModel(data=readiness)
+
+
+@router.get("/health",
+            status_code=HTTP_200_OK,
+            summary="Checks if application is alive.")
+async def check_liveliness() -> ResponseModel[ServiceReadiness]:
+    """
+    Checks if the application is running, it doesn't take into account required services. See readiness.
+    """
+    return ResponseModel(data=ServiceReadiness(status=ServiceReadinessStatus.OK, name="api-gateway"))
 
 
 @router.get("/",
