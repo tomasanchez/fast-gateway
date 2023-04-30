@@ -2,6 +2,7 @@
 This module is responsible for making requests to in-network services.
 """
 import asyncio
+import json
 from importlib import import_module
 from typing import Any, Callable, TypeVar
 from urllib.parse import urlencode
@@ -114,7 +115,7 @@ async def gateway(
         service_url: str,
         path: str,
         query_params: dict | None = None,
-        request_body: dict | None = None,
+        request_body: dict | str | None = None,
 ) -> tuple[dict[str, Any], int]:
     """
     Make request to in-network services.
@@ -136,6 +137,9 @@ async def gateway(
 
     if not request_body:
         request_body = {}
+
+    if isinstance(request_body, str):
+        request_body = json.loads(request_body)
 
     url = f'{service_url}{path}' if not query_params else f'{service_url}{path}?{urlencode(query_params)}'
 
