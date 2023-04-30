@@ -29,7 +29,7 @@ async def check_services(client: AsyncHttpClientDependency):
 
     settings = GatewaySettings()
     try:
-        _, code = await make_request(url=settings.AUTH_SERVICE_URL + "/health", method="GET", client=client)
+        _, code = await make_request(url=settings.AUTH_SERVICE_URL + "/readiness", method="GET", client=client)
         auth_service_status = ServiceReadinessStatus.OK if code == HTTP_200_OK else ServiceReadinessStatus.ERROR
     except (asyncio.TimeoutError, aiohttp.ClientError):
         auth_service_status = ServiceReadinessStatus.OFFLINE
