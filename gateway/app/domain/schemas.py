@@ -4,6 +4,7 @@ This module contains the schemas used for request/response validation in the all
 from enum import Enum
 from re import sub
 from typing import Generic, TypeVar
+from uuid import UUID
 
 from pydantic import BaseConfig, BaseModel, Field, EmailStr
 from pydantic.generics import GenericModel
@@ -94,6 +95,8 @@ class User(CamelCaseModel):
     """
     A user.
     """
-    id: str = Field(description="The user id.", example="1")
+    id: UUID = Field(description="The user id.", example="1")
     username: str = Field(description="The username.", example="john")
-    email: EmailStr = Field(description="The email.", example="jd@e.mail")
+    email: EmailStr | None = Field(description="The email.", example="jd@e.mail")
+    name: str | None = Field(description="The name.", example="John")
+    last_name: str | None = Field(description="The last name.", example="Doe")
