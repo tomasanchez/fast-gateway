@@ -1,0 +1,126 @@
+version: '3.8'
+
+services:
+
+  auth-service:
+    build:
+        context: simple-auth
+        dockerfile: Dockerfile
+    ports:
+        - "8000:80"
+    networks:
+      - app-network
+
+  booking-service:
+    build:
+        context: booking
+        dockerfile: Dockerfile
+    ports:
+        - "8001:80"
+    networks:
+      - app-network
+
+  gateway:
+    build:
+      context: gateway
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+    depends_on:
+      - redis-node-0
+      - redis-node-1
+      - redis-node-2
+      - redis-node-3
+      - redis-node-4
+      - redis-node-5
+    networks:
+      - app-network
+      - redis-cluster
+    environment:
+      - REDIS_HOST=redis-node-5
+      - REDIS_PORT=6379
+      - FASTAPI_USE_LIMITER=1
+      - API_GATEWAY_AUTH_SERVICE_URL=http://auth-service:80
+      - API_GATEWAY_BOOKING_SERVICE_URL=http://booking-service:80
+
+  redis-node-0:
+    image: docker.io/bitnami/redis-cluster:7.0
+    volumes:
+      - redis-cluster_data-0:/bitnami/redis/data
+    environment:
+      - 'REDIS_NODES=redis-node-0 redis-node-1 redis-node-2 redis-node-3 redis-node-4 redis-node-5'
+      - 'ALLOW_EMPTY_PASSWORD=yes'
+    networks:
+      - redis-cluster
+
+  redis-node-1:
+    image: docker.io/bitnami/redis-cluster:7.0
+    volumes:
+      - redis-cluster_data-1:/bitnami/redis/data
+    environment:
+      - 'REDIS_NODES=redis-node-0 redis-node-1 redis-node-2 redis-node-3 redis-node-4 redis-node-5'
+      - 'ALLOW_EMPTY_PASSWORD=yes'
+    networks:
+      - redis-cluster
+
+  redis-node-2:
+    image: docker.io/bitnami/redis-cluster:7.0
+    volumes:
+      - redis-cluster_data-2:/bitnami/redis/data
+    environment:
+      - 'REDIS_NODES=redis-node-0 redis-node-1 redis-node-2 redis-node-3 redis-node-4 redis-node-5'
+      - 'ALLOW_EMPTY_PASSWORD=yes'
+    networks:
+      - redis-cluster
+
+  redis-node-3:
+    image: docker.io/bitnami/redis-cluster:7.0
+    volumes:
+      - redis-cluster_data-3:/bitnami/redis/data
+    environment:
+      - 'REDIS_NODES=redis-node-0 redis-node-1 redis-node-2 redis-node-3 redis-node-4 redis-node-5'
+      - 'ALLOW_EMPTY_PASSWORD=yes'
+    networks:
+      - redis-cluster
+
+  redis-node-4:
+    image: docker.io/bitnami/redis-cluster:7.0
+    volumes:
+      - redis-cluster_data-4:/bitnami/redis/data
+    environment:
+      - 'REDIS_NODES=redis-node-0 redis-node-1 redis-node-2 redis-node-3 redis-node-4 redis-node-5'
+      - 'ALLOW_EMPTY_PASSWORD=yes'
+    networks:
+          - redis-cluster
+
+  redis-node-5:
+    image: docker.io/bitnami/redis-cluster:7.0
+    volumes:
+      - redis-cluster_data-5:/bitnami/redis/data
+    depends_on:
+      - redis-node-0
+      - redis-node-1
+      - redis-node-2
+      - redis-node-3
+      - redis-node-4
+    environment:
+      - 'REDIS_CLUSTER_REPLICAS=1'
+      - 'REDIS_NODES=redis-node-0 redis-node-1 redis-node-2 redis-node-3 redis-node-4 redis-node-5'
+      - 'REDIS_CLUSTER_CREATOR=yes'
+      - 'ALLOW_EMPTY_PASSWORD=yes'
+    networks:
+      - redis-cluster
+
+networks:
+  app-network:
+    driver: bridge
+  redis-cluster:
+    driver: bridge
+
+volumes:
+  redis-cluster_data-0:
+  redis-cluster_data-1:
+  redis-cluster_data-2:
+  redis-cluster_data-3:
+  redis-cluster_data-4:
+  redis-cluster_data-5:
