@@ -17,9 +17,8 @@ router = APIRouter(prefix="/auth-service", tags=["Auth Service"])
 
 settings = GatewaySettings()
 
-users_base_url = "/api/v1/users"
-
-auth_base_url = "/api/v1/auth"
+users_base_url = "/users"
+user_request_base_url = "/api/v1/users"
 
 
 @router.get("/docs", include_in_schema=False)
@@ -30,7 +29,7 @@ async def docs():
     return RedirectResponse(url=f"{settings.AUTH_SERVICE_URL}/docs")
 
 
-@router.get("/users",
+@router.get(f"{users_base_url}",
             status_code=HTTP_200_OK,
             tags=["Queries"])
 async def users(http_client: AsyncHttpClientDependency) -> ResponseModels[User]:
@@ -40,13 +39,13 @@ async def users(http_client: AsyncHttpClientDependency) -> ResponseModels[User]:
 
     response, code = await gateway(client=http_client,
                                    service_url=settings.AUTH_SERVICE_URL,
-                                   path=users_base_url,
+                                   path=user_request_base_url,
                                    method="GET")
 
     return ResponseModels[User](**response)
 
 
-@router.get("/users/{user_id}",
+@router.get(f"{users_base_url}/{{user_id}}",
             status_code=HTTP_200_OK,
             tags=["Queries"])
 async def user_by_id(user_id: UUID,
@@ -57,7 +56,7 @@ async def user_by_id(user_id: UUID,
 
     response, code = await gateway(client=http_client,
                                    service_url=settings.AUTH_SERVICE_URL,
-                                   path=f"{users_base_url}/{user_id}",
+                                   path=f"{user_request_base_url}/{user_id}",
                                    method="GET")
     if code == HTTP_404_NOT_FOUND:
         raise HTTPException(status_code=code, detail="User not found")
@@ -65,7 +64,7 @@ async def user_by_id(user_id: UUID,
     return ResponseModel[User](**response)
 
 
-@router.post("/users",
+@router.post(f"{users_base_url}",
              status_code=HTTP_201_CREATED,
              tags=["Commands"])
 async def create_user(command: RegisterUser,
@@ -79,7 +78,7 @@ async def create_user(command: RegisterUser,
 
     service_response, code = await gateway(client=http_client,
                                            service_url=settings.AUTH_SERVICE_URL,
-                                           path=users_base_url,
+                                           path=user_request_base_url,
                                            method="POST",
                                            request_body=command.dict(by_alias=True))
 
@@ -88,5 +87,5 @@ async def create_user(command: RegisterUser,
 
     response_body = ResponseModel[User](**service_response)
 
-    response.headers["Location"] = f"{request.base_url}{auth_base_url}/users/{response_body.data.id}"
+    response.headers["Location"] = f"{request.base_url}api/v1/users/{response_body.data.id}"
     return response_body
